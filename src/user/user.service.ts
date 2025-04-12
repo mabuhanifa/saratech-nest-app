@@ -15,7 +15,7 @@ export class UserService {
     return 'This action adds a new user';
   }
 
-  findAll() {
+  async findAll() {
     return this.userRepository.find();
   }
 

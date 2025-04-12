@@ -1,26 +1,36 @@
-import { Injectable } from '@nestjs/common';
-import { CreatePushDto } from './dto/create-push.dto';
-import { UpdatePushDto } from './dto/update-push.dto';
+import { Injectable, Logger } from '@nestjs/common';
+import { CronJob } from 'cron';
+import { UserService } from 'src/user/user.service';
+import { PushNotificationDto } from './dto/push.dto';
 
 @Injectable()
 export class PushService {
-  create(createPushDto: CreatePushDto) {
-    return 'This action adds a new push';
+  private readonly logger = new Logger(PushService.name);
+
+  constructor(private readonly usersService: UserService) {}
+
+  async sendNotification(dto: PushNotificationDto) {
+    const users = await this.usersService.findAll();
+    users.forEach((user) => {
+      this.logger.log(
+        `📤 Sending to ${user.name} (${user.deviceToken}): ${dto.title} - ${dto.message}`,
+      );
+    });
+    return { message: 'Notification sent to all users' };
   }
 
-  findAll() {
-    return `This action returns all push`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} push`;
-  }
-
-  update(id: number, updatePushDto: UpdatePushDto) {
-    return `This action updates a #${id} push`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} push`;
+  scheduleNotification(dto: PushNotificationDto) {
+    const scheduleDate = new Date(dto.scheduleAt);
+    const job = new CronJob(scheduleDate, () => {
+      this.sendNotification(dto);
+      job.stop();
+    });
+    job.start();
+    this.logger.log(
+      `📅 Notification scheduled for ${scheduleDate.toISOString()}`,
+    );
+    return {
+      message: `Notification scheduled for ${scheduleDate.toISOString()}`,
+    };
   }
 }
